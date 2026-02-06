@@ -4,15 +4,36 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Homicide Rate v.s. GDP</title>
-    <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <main class="page">
-      <header class="header">
+    <main>
+      <header>
         <h1>Homicide Rate v.s. GDP</h1>
         <p>Yu Jou Chang</p>
-        <p>Source: Our World in Data - <a href="https://ourworldindata.org/grapher/gdp-per-capita-worldbank">GDP per capita</a> and <a href="https://ourworldindata.org/grapher/homicide-rate-unodc?country=ECU~JAM~COL~RUS">Homicide rate per 100,000 population</a></p>
+        <p>
+          Source: Our World in Data -
+          <a href="https://ourworldindata.org/grapher/gdp-per-capita-worldbank">GDP per capita</a>
+          and
+          <a href="https://ourworldindata.org/grapher/homicide-rate-unodc?country=ECU~JAM~COL~RUS">
+            Homicide rate per 100,000 population
+          </a>
+        </p>
       </header>
+
+      <section>
+        <h2>Scatter: GDP vs Homicide</h2>
+        <svg id="scatter" width="900" height="500"></svg>
+      </section>
+
+      <section>
+        <h2>Histogram: Homicide Rate Distribution</h2>
+        <svg id="hist-homicide" width="900" height="500"></svg>
+      </section>
+
+      <section>
+        <h2>Histogram: GDP per Capita Distribution</h2>
+        <svg id="hist-gdp" width="900" height="500"></svg>
+      </section>
     </main>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
