@@ -25,18 +25,34 @@
         <svg id="scatter" width="900" height="500"></svg>
       </section>
 
-      <section>
-        <h2>Histogram: Homicide Rate Distribution</h2>
-        <svg id="hist-homicide" width="900" height="500"></svg>
-      </section>
+      <h2>Global Homicide Choropleth</h2>
+      <label for="year-select">Year:</label>
+      <select id="year-select"></select>
 
-      <section>
-        <h2>Histogram: GDP per Capita Distribution</h2>
-        <svg id="hist-gdp" width="900" height="500"></svg>
-      </section>
+      <svg id="map" width="900" height="500"></svg>
+
+      <div
+        id="tooltip"
+        style="position:absolute; display:none; background:#fff; border:1px solid #999; padding:6px 8px; font-size:12px; pointer-events:none;"
+      ></div>
+
+      <svg width="0" height="0" style="position:absolute">
+        <defs>
+          <pattern id="lightstripe" patternUnits="userSpaceOnUse" width="5" height="5">
+            <image
+              xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc1JyBoZWlnaHQ9JzUnPgogIDxyZWN0IHdpZHRoPSc1JyBoZWlnaHQ9JzUnIGZpbGw9J3doaXRlJy8+CiAgPHBhdGggZD0nTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVonIHN0cm9rZT0nIzg4OCcgc3Ryb2tlLXdpZHRoPScxJy8+Cjwvc3ZnPg=="
+              x="0"
+              y="0"
+              width="5"
+              height="5"`
+            ></image>
+          </pattern>
+        </defs>
+      </svg>
     </main>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

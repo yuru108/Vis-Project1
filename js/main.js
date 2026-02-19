@@ -1,6 +1,5 @@
 const scatterSvg = d3.select("#scatter");
-const histHomicideSvg = d3.select("#hist-homicide");
-const histGdpSvg = d3.select("#hist-gdp");
+const tooltipPadding = 10;
 
 const parseRow = (d) => ({
   country: d.country,
@@ -73,78 +72,155 @@ function drawScatter(data) {
     .attr("opacity", 0.5);
 }
 
-function drawHistogram(svg, values, xLabel) {
-  const { width, height } = getSize(svg);
-  const margin = { top: 20, right: 20, bottom: 50, left: 70 };
-  const innerW = width - margin.left - margin.right;
-  const innerH = height - margin.top - margin.bottom;
+class ChoroplethMap {
+  constructor(config, geoData) {
+    this.config = {
+      parentElement: config.parentElement,
+      tooltipElement: config.tooltipElement,
+      width: config.width || 1100,
+      height: config.height || 620,
+      tooltipPadding: config.tooltipPadding || 10,
+    };
 
-  svg.selectAll("*").remove();
+    this.geoData = geoData;
+    this.svg = d3.select(this.config.parentElement);
+    this.tooltip = d3.select(this.config.tooltipElement);
 
-  const g = svg.append("g").attr("transform", `translate(${margin.left}, ${margin.top})`);
+    this.projection = d3.geoMercator();
+    this.geoPath = d3.geoPath().projection(this.projection);
 
-  const x = d3
-    .scaleLinear()
-    .domain(d3.extent(values))
-    .nice()
-    .range([0, innerW]);
+    const countries = topojson.feature(this.geoData, this.geoData.objects.world);
+    this.projection.fitSize([this.config.width, this.config.height], countries);
 
-  const bins = d3
-    .bin()
-    .domain(x.domain())
-    .thresholds(30)(values);
+    this.chart = this.svg.append("g");
+  }
 
-  const y = d3
-    .scaleLinear()
-    .domain([0, d3.max(bins, (d) => d.length)])
-    .nice()
-    .range([innerH, 0]);
+  update() {
+    const countries = topojson.feature(this.geoData, this.geoData.objects.world);
 
-  g.append("g")
-    .attr("transform", `translate(0, ${innerH})`)
-    .call(d3.axisBottom(x));
+    const values = this.geoData.objects.world.geometries
+      .map((d) => d.properties.homicide_rate)
+      .filter((d) => Number.isFinite(d));
 
-  g.append("g").call(d3.axisLeft(y));
+    const extent = d3.extent(values);
+    const domain =
+      Number.isFinite(extent[0]) && Number.isFinite(extent[1])
+        ? extent[0] === extent[1]
+          ? [extent[0], extent[0] + 1]
+          : extent
+        : [0, 1];
 
-  g.append("text")
-    .attr("x", innerW / 2)
-    .attr("y", innerH + 40)
-    .attr("text-anchor", "middle")
-    .text(xLabel);
+    const colorScale = d3
+      .scaleLinear()
+      .range(["#cfe2f2", "#0d306b"])
+      .domain(domain)
+      .interpolate(d3.interpolateHcl);
 
-  g.append("text")
-    .attr("transform", "rotate(-90)")
-    .attr("x", -innerH / 2)
-    .attr("y", -50)
-    .attr("text-anchor", "middle")
-    .text("Count");
+    const countryPath = this.chart
+      .selectAll(".country")
+      .data(countries.features)
+      .join("path")
+      .attr("class", "country")
+      .attr("d", this.geoPath)
+      .attr("stroke", "#555")
+      .attr("stroke-width", 0.4)
+      .attr("fill", (d) => {
+        const value = d.properties.homicide_rate;
+        if (Number.isFinite(value)) {
+          return colorScale(value);
+        }
+        return "url(#lightstripe)";
+      });
 
-  g.append("g")
-    .selectAll("rect")
-    .data(bins)
-    .enter()
-    .append("rect")
-    .attr("x", (d) => x(d.x0) + 1)
-    .attr("y", (d) => y(d.length))
-    .attr("width", (d) => Math.max(0, x(d.x1) - x(d.x0) - 1))
-    .attr("height", (d) => innerH - y(d.length))
-    .attr("fill", "#ff7f0e")
-    .attr("opacity", 0.8);
+    countryPath
+      .on("mousemove", (event, d) => {
+        const rate = Number.isFinite(d.properties.homicide_rate)
+          ? `${d.properties.homicide_rate.toFixed(2)}`
+          : "No data available";
+
+        this.tooltip
+          .style("display", "block")
+          .style("left", `${event.pageX + this.config.tooltipPadding}px`)
+          .style("top", `${event.pageY + this.config.tooltipPadding}px`)
+          .html(`
+            <div><strong>${d.properties.name}</strong></div>
+            <div>${rate}</div>
+          `);
+      })
+      .on("mouseleave", () => {
+        this.tooltip.style("display", "none");
+      });
+  }
 }
 
-async function init() {
-  const data = await d3.csv("data/data.csv", parseRow);
-  drawScatter(data);
-  drawHistogram(
-    histHomicideSvg,
-    data.map((d) => d.homicide_rate),
-    "Homicide rate per 100,000"
-  );
-  drawHistogram(
-    histGdpSvg,
-    data.map((d) => d.gdp_pc),
-    "GDP per capita"
-  );
+function attachHomicideValues(geoData, countryData, selectedYear) {
+  const homicideByIso3 = new Map();
+
+  countryData
+    .filter((d) => d.year === selectedYear && Number.isFinite(d.homicide_rate))
+    .forEach((d) => {
+      homicideByIso3.set(d.iso3, d.homicide_rate);
+    });
+
+  geoData.objects.world.geometries.forEach((d) => {
+    const value = homicideByIso3.get(d.id);
+    d.properties.homicide_rate = Number.isFinite(value) ? value : null;
+  });
 }
 
-init();
+function getYears(countryData) {
+  return Array.from(new Set(countryData.map((d) => d.year))).sort((a, b) => a - b);
+}
+
+function getBestCoverageYear(countryData) {
+  const yearCounts = d3.rollups(
+    countryData.filter((d) => Number.isFinite(d.homicide_rate)),
+    (v) => v.length,
+    (d) => d.year
+  );
+
+  return yearCounts.sort((a, b) => d3.descending(a[1], b[1]))[0][0];
+}
+
+Promise.all([d3.json("data/world.topo.json"), d3.csv("data/data.csv", parseRow)])
+  .then(([geoData, countryData]) => {
+    drawScatter(countryData);
+
+    const yearSelect = d3.select("#year-select");
+    const years = getYears(countryData);
+    const defaultYear = getBestCoverageYear(countryData);
+
+    yearSelect
+      .selectAll("option")
+      .data(years)
+      .join("option")
+      .attr("value", (d) => d)
+      .text((d) => d);
+
+    yearSelect.property("value", defaultYear);
+
+    const choroplethMap = new ChoroplethMap(
+      {
+        parentElement: "#map",
+        tooltipElement: "#tooltip",
+        width: 1100,
+        height: 620,
+        tooltipPadding,
+      },
+      geoData
+    );
+
+    function update(year) {
+      attachHomicideValues(geoData, countryData, +year);
+      choroplethMap.update();
+    }
+
+    update(defaultYear);
+
+    yearSelect.on("change", (event) => {
+      update(event.target.value);
+    });
+  })
+  .catch((error) => {
+    console.error(error);
+  });
