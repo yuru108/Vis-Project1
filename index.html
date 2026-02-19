@@ -4,52 +4,62 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Homicide Rate v.s. GDP</title>
+    <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <main>
-      <header>
-        <h1>Homicide Rate v.s. GDP</h1>
-        <p>Yu Jou Chang</p>
-        <p>
-          Source: Our World in Data -
-          <a href="https://ourworldindata.org/grapher/gdp-per-capita-worldbank">GDP per capita</a>
-          and
-          <a href="https://ourworldindata.org/grapher/homicide-rate-unodc?country=ECU~JAM~COL~RUS">
-            Homicide rate per 100,000 population
-          </a>
-        </p>
+    <div class="dashboard">
+      <header class="panel header-panel">
+        <div class="header-left">
+          <h1>Homicide Rate v.s. GDP</h1>
+          <p>Yu Jou Chang</p>
+          <p>
+            Source: Our World in Data -
+            <a href="https://ourworldindata.org/grapher/gdp-per-capita-worldbank">GDP per capita</a>
+            and
+            <a href="https://ourworldindata.org/grapher/homicide-rate-unodc?country=ECU~JAM~COL~RUS">
+              Homicide rate per 100,000 population
+            </a>
+          </p>
+        </div>
+        <div class="header-right">
+          <!-- Some Buttons -->
+        </div>
       </header>
 
-      <section>
-        <h2>Scatter: GDP vs Homicide</h2>
-        <svg id="scatter" width="900" height="500"></svg>
+      <section class="panel main-left">
+        <div class="viz-wrap">
+          <svg id="map" viewBox="0 0 1100 620" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
       </section>
 
-      <h2>Global Homicide Choropleth</h2>
-      <label for="year-select">Year:</label>
-      <select id="year-select"></select>
+      <section class="panel main-right">
+        <div class="viz-wrap">
+          <svg id="scatter" viewBox="0 0 900 500" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </section>
 
-      <svg id="map" width="900" height="500"></svg>
+      <section class="panel bottom-panel">
+        <div class="timeline-wrap">
+          <svg id="timeline" viewBox="0 0 1100 80" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </section>
+    </div>
 
-      <div
-        id="tooltip"
-        style="position:absolute; display:none; background:#fff; border:1px solid #999; padding:6px 8px; font-size:12px; pointer-events:none;"
-      ></div>
+    <div id="tooltip" class="tooltip"></div>
 
-      <svg width="0" height="0" style="position:absolute">
-        <defs>
-          <pattern id="lightstripe" patternUnits="userSpaceOnUse" width="5" height="5">
-            <image
-              xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc1JyBoZWlnaHQ9JzUnPgogIDxyZWN0IHdpZHRoPSc1JyBoZWlnaHQ9JzUnIGZpbGw9J3doaXRlJy8+CiAgPHBhdGggZD0nTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVonIHN0cm9rZT0nIzg4OCcgc3Ryb2tlLXdpZHRoPScxJy8+Cjwvc3ZnPg=="
-              x="0"
-              y="0"
-              width="5"
-              height="5"`
-            ></image>
-          </pattern>
-        </defs>
-      </svg>
-    </main>
+    <svg width="0" height="0" class="defs-only">
+      <defs>
+        <pattern id="lightstripe" patternUnits="userSpaceOnUse" width="5" height="5">
+          <image
+            xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc1JyBoZWlnaHQ9JzUnPgogIDxyZWN0IHdpZHRoPSc1JyBoZWlnaHQ9JzUnIGZpbGw9J3doaXRlJy8+CiAgPHBhdGggZD0nTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVonIHN0cm9rZT0nIzg4OCcgc3Ryb2tlLXdpZHRoPScxJy8+Cjwvc3ZnPg=="
+            x="0"
+            y="0"
+            width="5"
+            height="5"
+          ></image>
+        </pattern>
+      </defs>
+    </svg>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>

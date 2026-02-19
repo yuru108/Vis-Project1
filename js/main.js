@@ -11,6 +11,11 @@ const parseRow = (d) => ({
 });
 
 function getSize(svg) {
+  const viewBox = svg.attr("viewBox");
+  if (viewBox) {
+    const [minX, minY, width, height] = viewBox.split(" ").map(Number);
+    return { width, height };
+  }
   return {
     width: +svg.attr("width"),
     height: +svg.attr("height"),
@@ -19,7 +24,7 @@ function getSize(svg) {
 
 function drawScatter(data) {
   const { width, height } = getSize(scatterSvg);
-  const margin = { top: 20, right: 20, bottom: 50, left: 70 };
+  const margin = { top: 20, right: 20, bottom: 60, left: 80 };
   const innerW = width - margin.left - margin.right;
   const innerH = height - margin.top - margin.bottom;
 
@@ -43,21 +48,28 @@ function drawScatter(data) {
 
   g.append("g")
     .attr("transform", `translate(0, ${innerH})`)
-    .call(d3.axisBottom(x));
+    .call(d3.axisBottom(x).ticks(5).tickFormat(d3.format(".2s")))
+    .selectAll("text")
+    .style("font-size", "20px");
 
-  g.append("g").call(d3.axisLeft(y));
+  g.append("g")
+    .call(d3.axisLeft(y))
+    .selectAll("text")
+    .style("font-size", "20px");
 
   g.append("text")
     .attr("x", innerW / 2)
-    .attr("y", innerH + 40)
+    .attr("y", innerH + 50)
     .attr("text-anchor", "middle")
+    .style("font-size", "20px")
     .text("GDP per capita");
 
   g.append("text")
     .attr("transform", "rotate(-90)")
     .attr("x", -innerH / 2)
-    .attr("y", -50)
+    .attr("y", -60)
     .attr("text-anchor", "middle")
+    .style("font-size", "20px")
     .text("Homicide rate per 100,000");
 
   g.append("g")
@@ -67,7 +79,7 @@ function drawScatter(data) {
     .append("circle")
     .attr("cx", (d) => x(d.gdp_pc))
     .attr("cy", (d) => y(d.homicide_rate))
-    .attr("r", 2)
+    .attr("r", 4)
     .attr("fill", "#1f77b4")
     .attr("opacity", 0.5);
 }
@@ -90,13 +102,21 @@ class ChoroplethMap {
     this.geoPath = d3.geoPath().projection(this.projection);
 
     const countries = topojson.feature(this.geoData, this.geoData.objects.world);
+    countries.features = countries.features.filter(d => d.properties.name !== "Antarctica");
     this.projection.fitSize([this.config.width, this.config.height], countries);
 
     this.chart = this.svg.append("g");
+    
+    // Legend Container
+    this.legend = this.svg
+      .append("g")
+      .attr("class", "legend")
+      .attr("transform", `translate(10, ${this.config.height - 40})`);
   }
 
   update() {
     const countries = topojson.feature(this.geoData, this.geoData.objects.world);
+    countries.features = countries.features.filter(d => d.properties.name !== "Antarctica");
 
     const values = this.geoData.objects.world.geometries
       .map((d) => d.properties.homicide_rate)
@@ -115,6 +135,51 @@ class ChoroplethMap {
       .range(["#cfe2f2", "#0d306b"])
       .domain(domain)
       .interpolate(d3.interpolateHcl);
+
+    // Update Legend
+    const legendWidth = 300;
+    const legendHeight = 10;
+
+    this.legend.selectAll("*").remove();
+    this.legend.attr("transform", `translate(10, ${this.config.height - 40})`);
+
+    const linearGradient = this.legend
+      .append("defs")
+      .append("linearGradient")
+      .attr("id", "linear-gradient")
+      .attr("x1", "0%")
+      .attr("y1", "0%")
+      .attr("x2", "100%")
+      .attr("y2", "0%");
+
+    linearGradient
+      .selectAll("stop")
+      .data(
+        colorScale.ticks().map((t, i, n) => ({
+          offset: `${(100 * i) / n.length}%`,
+          stopColor: colorScale(t),
+        }))
+      )
+      .enter()
+      .append("stop")
+      .attr("offset", (d) => d.offset)
+      .attr("stop-color", (d) => d.stopColor);
+
+    this.legend
+      .append("rect")
+      .attr("width", legendWidth)
+      .attr("height", legendHeight)
+      .style("fill", "url(#linear-gradient)");
+
+    const legendScale = d3.scaleLinear().domain(domain).range([0, legendWidth]);
+    const legendAxis = d3.axisBottom(legendScale).ticks(5).tickSize(5);
+
+    this.legend
+      .append("g")
+      .attr("transform", `translate(0, ${legendHeight})`)
+      .call(legendAxis)
+      .selectAll("text")
+      .style("font-size", "20px");
 
     const countryPath = this.chart
       .selectAll(".country")
@@ -153,11 +218,11 @@ class ChoroplethMap {
   }
 }
 
-function attachHomicideValues(geoData, countryData, selectedYear) {
+function attachHomicideValues(geoData, averagedData) {
   const homicideByIso3 = new Map();
 
-  countryData
-    .filter((d) => d.year === selectedYear && Number.isFinite(d.homicide_rate))
+  averagedData
+    .filter((d) => Number.isFinite(d.homicide_rate))
     .forEach((d) => {
       homicideByIso3.set(d.iso3, d.homicide_rate);
     });
@@ -168,36 +233,38 @@ function attachHomicideValues(geoData, countryData, selectedYear) {
   });
 }
 
-function getYears(countryData) {
-  return Array.from(new Set(countryData.map((d) => d.year))).sort((a, b) => a - b);
+function calculateCountryAverages(countryData) {
+  const countryGroups = d3.group(countryData, (d) => d.iso3);
+
+  const averagedData = Array.from(countryGroups, ([iso3, values]) => {
+    const validHomicide = values.filter((d) => Number.isFinite(d.homicide_rate));
+    const validGdp = values.filter((d) => Number.isFinite(d.gdp_pc));
+
+    if (validHomicide.length === 0 && validGdp.length === 0) return null;
+
+    return {
+      iso3: iso3,
+      country: values[0].country,
+      homicide_rate: validHomicide.length
+        ? d3.mean(validHomicide, (d) => d.homicide_rate)
+        : null,
+      gdp_pc: validGdp.length ? d3.mean(validGdp, (d) => d.gdp_pc) : null,
+    };
+  }).filter((d) => d !== null);
+
+  return averagedData;
 }
 
-function getBestCoverageYear(countryData) {
-  const yearCounts = d3.rollups(
-    countryData.filter((d) => Number.isFinite(d.homicide_rate)),
-    (v) => v.length,
-    (d) => d.year
-  );
-
-  return yearCounts.sort((a, b) => d3.descending(a[1], b[1]))[0][0];
-}
-
-Promise.all([d3.json("data/world.topo.json"), d3.csv("data/data.csv", parseRow)])
+Promise.all([
+  d3.json("data/world.topo.json"),
+  d3.csv("data/data.csv", parseRow),
+])
   .then(([geoData, countryData]) => {
-    drawScatter(countryData);
+    const averagedData = calculateCountryAverages(countryData);
 
-    const yearSelect = d3.select("#year-select");
-    const years = getYears(countryData);
-    const defaultYear = getBestCoverageYear(countryData);
+    drawScatter(averagedData.filter(d => d.gdp_pc !== null && d.homicide_rate !== null));
 
-    yearSelect
-      .selectAll("option")
-      .data(years)
-      .join("option")
-      .attr("value", (d) => d)
-      .text((d) => d);
-
-    yearSelect.property("value", defaultYear);
+    attachHomicideValues(geoData, averagedData);
 
     const choroplethMap = new ChoroplethMap(
       {
@@ -209,17 +276,8 @@ Promise.all([d3.json("data/world.topo.json"), d3.csv("data/data.csv", parseRow)]
       },
       geoData
     );
-
-    function update(year) {
-      attachHomicideValues(geoData, countryData, +year);
-      choroplethMap.update();
-    }
-
-    update(defaultYear);
-
-    yearSelect.on("change", (event) => {
-      update(event.target.value);
-    });
+    
+    choroplethMap.update();
   })
   .catch((error) => {
     console.error(error);
