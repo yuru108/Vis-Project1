@@ -82,6 +82,35 @@ function drawScatter(data) {
     .attr("r", 4)
     .attr("fill", "#1f77b4")
     .attr("opacity", 0.5);
+
+  // Calculate linear regression
+  const n = data.length;
+  if (n > 1) {
+    let sumX = 0, sumY = 0, sumXY = 0, sumX2 = 0;
+    for (const d of data) {
+      sumX += d.gdp_pc;
+      sumY += d.homicide_rate;
+      sumXY += d.gdp_pc * d.homicide_rate;
+      sumX2 += d.gdp_pc * d.gdp_pc;
+    }
+    
+    const slope = (n * sumXY - sumX * sumY) / (n * sumX2 - sumX * sumX);
+    const intercept = (sumY - slope * sumX) / n;
+
+    const x1 = d3.min(data, d => d.gdp_pc);
+    const x2 = d3.max(data, d => d.gdp_pc);
+    const y1 = slope * x1 + intercept;
+    const y2 = slope * x2 + intercept;
+
+    g.append("line")
+      .attr("x1", x(x1))
+      .attr("y1", y(y1))
+      .attr("x2", x(x2))
+      .attr("y2", y(y2))
+      .attr("stroke", "red")
+      .attr("stroke-width", 2)
+      .attr("stroke-dasharray", "5,5"); // Dashed line for trend
+  }
 }
 
 class ChoroplethMap {
