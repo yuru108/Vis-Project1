@@ -87,7 +87,12 @@
         .attr("ry", 2);
 
       const legendScale = d3.scaleLinear().domain(domain).range([0, legendWidth]);
-      const legendAxis = d3.axisBottom(legendScale).ticks(5).tickSize(5);
+      
+      // Use d3.format("~s") to format numbers with k, M, etc.
+      const legendAxis = d3.axisBottom(legendScale)
+        .ticks(5)
+        .tickSize(5)
+        .tickFormat(d3.format("~s"));
 
       this.legend
         .append("g")

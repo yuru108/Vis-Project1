@@ -30,23 +30,36 @@
             </a>
           </p>
         </div>
-        <div class="header-right">
-          <label for="metric-select">Compare with:</label>
-          <select id="metric-select">
-            <option value="gdp_pc">GDP per capita</option>
-            <option value="gini">Gini coefficient</option>
-            <option value="homicide_rate">Homicide rate</option>
-          </select>
-        </div>
       </header>
 
       <section class="panel main-left">
+        <div class="panel-head">
+          <h2>World Map</h2>
+          <div class="map-controls">
+            <label for="map-metric-select">Color by:</label>
+            <select id="map-metric-select" class="custom-select">
+              <option value="homicide_rate">Homicide rate</option>
+              <option value="gdp_pc">GDP per capita</option>
+              <option value="gini">Gini coefficient</option>
+            </select>
+          </div>
+        </div>
         <div class="viz-wrap">
           <svg id="map" viewBox="0 0 1100 620" preserveAspectRatio="xMidYMid meet"></svg>
         </div>
       </section>
 
       <section class="panel main-right">
+        <div class="panel-head">
+          <h2>Scatter Plot</h2>
+          <div class="map-controls">
+            <label for="scatter-metric-select">X-Axis:</label>
+            <select id="scatter-metric-select" class="custom-select">
+              <option value="gdp_pc">GDP per capita</option>
+              <option value="gini">Gini coefficient</option>
+            </select>
+          </div>
+        </div>
         <div class="viz-wrap">
           <svg id="scatter" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid meet"></svg>
         </div>

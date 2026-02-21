@@ -39,9 +39,13 @@ function init() {
   loadData()
     .then(([geoData, countryData]) => {
       const averagedData = MapView.calculateCountryAverages(countryData);
-      const metricSelect = document.getElementById("metric-select");
+      
+      const mapMetricSelect = document.getElementById("map-metric-select");
+      const scatterMetricSelect = document.getElementById("scatter-metric-select");
 
+      // Initialize Scatter Plot
       const scatterMetric = METRICS[DEFAULTS.scatterMetric];
+      scatterMetricSelect.value = scatterMetric.key;
       ScatterView.drawScatter(
         averagedData.filter((d) => d[scatterMetric.key] !== null && d.homicide_rate !== null),
         {
@@ -50,9 +54,9 @@ function init() {
         }
       );
 
+      // Initialize Map
       const mapMetric = METRICS[DEFAULTS.mapMetric];
-      metricSelect.value = mapMetric.key;
-
+      mapMetricSelect.value = mapMetric.key;
       const mapHandle = MapView.initMap(geoData, averagedData, mapMetric.key, mapMetric.label, {
         mapSelector: "#map",
         tooltipSelector: "#tooltip",
@@ -60,10 +64,23 @@ function init() {
         height: 620,
       });
 
-      metricSelect.addEventListener("change", (event) => {
+      // Event Listeners
+      mapMetricSelect.addEventListener("change", (event) => {
         const selected = METRICS[event.target.value];
         if (!selected) return;
         mapHandle.updateMetric(selected.key, selected.label, averagedData);
+      });
+
+      scatterMetricSelect.addEventListener("change", (event) => {
+        const selected = METRICS[event.target.value];
+        if (!selected) return;
+        ScatterView.drawScatter(
+          averagedData.filter((d) => d[selected.key] !== null && d.homicide_rate !== null),
+          {
+            metricKey: selected.key,
+            metricLabel: selected.label,
+          }
+        );
       });
     })
     .catch((error) => {
@@ -75,7 +92,12 @@ window.App = {
   init,
   setDataSources,
   setMapMetric: (metricKey) => {
-    const select = document.getElementById("metric-select");
+    const select = document.getElementById("map-metric-select");
+    if (select) select.value = metricKey;
+    init();
+  },
+  setScatterMetric: (metricKey) => {
+    const select = document.getElementById("scatter-metric-select");
     if (select) select.value = metricKey;
     init();
   },

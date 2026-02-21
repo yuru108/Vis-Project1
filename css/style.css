@@ -112,20 +112,35 @@ body {
   text-decoration: underline;
 }
 
-.header-right {
-  flex-shrink: 0;
+.panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.panel-head h2 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.map-controls {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.header-right label {
+.map-controls label {
   font-size: 13px;
   font-weight: 600;
   color: var(--text-secondary);
 }
 
-select#metric-select {
+select.custom-select {
   appearance: none;
   background-color: #f9fafb;
   border: 1px solid var(--border-color);
@@ -144,12 +159,12 @@ select#metric-select {
   box-shadow: var(--shadow-sm);
 }
 
-select#metric-select:hover {
+select.custom-select:hover {
   border-color: var(--text-muted);
   background-color: #ffffff;
 }
 
-select#metric-select:focus {
+select.custom-select:focus {
   outline: none;
   border-color: var(--accent-color);
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
