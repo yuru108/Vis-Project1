@@ -87,8 +87,6 @@
         .attr("ry", 2);
 
       const legendScale = d3.scaleLinear().domain(domain).range([0, legendWidth]);
-      
-      // Use d3.format("~s") to format numbers with k, M, etc.
       const legendAxis = d3.axisBottom(legendScale)
         .ticks(5)
         .tickSize(5)
@@ -99,7 +97,7 @@
         .attr("transform", `translate(0, ${legendHeight})`)
         .call(legendAxis)
         .selectAll("text")
-        .style("font-size", "18px")
+        .style("font-size", "16px")
         .style("fill", "var(--text-secondary)");
 
       this.legend.selectAll(".domain, .tick line")
@@ -109,7 +107,7 @@
         .append("text")
         .attr("x", 0)
         .attr("y", -8)
-        .style("font-size", "20px")
+        .style("font-size", "18px")
         .style("font-weight", "500")
         .style("fill", "var(--text-primary)")
         .text(metricLabel);
@@ -130,13 +128,14 @@
           return `url(#${this.config.stripeFillId})`;
         })
         .style("transition", "fill 0.3s ease, opacity 0.2s ease")
-        .on("mouseover", function() {
+        .style("pointer-events", "all")
+        .on("mouseover", function () {
           d3.select(this)
             .style("opacity", 0.8)
             .attr("stroke-width", 1.5)
             .attr("stroke", "#1f2937");
         })
-        .on("mouseout", function() {
+        .on("mouseout", function () {
           d3.select(this)
             .style("opacity", 1)
             .attr("stroke-width", 0.5)
@@ -151,6 +150,7 @@
 
           this.tooltip
             .style("display", "block")
+            .style("opacity", 1)
             .style("left", `${event.pageX + this.config.tooltipPadding}px`)
             .style("top", `${event.pageY + this.config.tooltipPadding}px`)
             .html(`
@@ -159,7 +159,7 @@
           `);
         })
         .on("mouseleave", () => {
-          this.tooltip.style("display", "none");
+          this.tooltip.style("display", "none").style("opacity", 0);
         });
     }
   }
@@ -222,4 +222,3 @@
     attachMetricValues,
   };
 })(window);
-

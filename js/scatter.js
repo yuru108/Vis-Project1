@@ -40,21 +40,16 @@
       .attr("transform", `translate(${margin.left}, ${margin.top})`);
 
     let xDomain = d3.extent(plotData, (d) => d[metricKey]);
-    
-    // Adjust domain to reduce empty space, especially for log scale
     if (metricKey === "gdp_pc") {
-      // For GDP (log scale), tighten the domain slightly around the min/max values
-      // to avoid jumping to the next full power of 10 if it's far away
       const minVal = xDomain[0];
       const maxVal = xDomain[1];
-      // Add a small 5% padding instead of using .nice() which forces full powers of 10
       xDomain = [minVal * 0.9, maxVal * 1.1];
     }
 
     const x = (metricKey === "gdp_pc" ? d3.scaleLog() : d3.scaleLinear())
       .domain(xDomain)
       .range([0, innerW]);
-      
+
     if (metricKey !== "gdp_pc") {
       x.nice();
     }
@@ -68,14 +63,12 @@
     const xAxis = d3.axisBottom(x).tickFormat(d3.format("~s"));
     if (metricKey === "gdp_pc") {
       const [minX, maxX] = x.domain();
-      // Only show ticks that are within our tightened domain
       const ticks = buildLogTicks(minX, maxX);
       xAxis.tickValues(ticks);
     } else {
       xAxis.ticks(5);
     }
 
-    // Add Y-axis grid lines
     g.append("g")
       .attr("class", "grid-lines")
       .call(d3.axisLeft(y)
@@ -87,11 +80,10 @@
       .attr("stroke-dasharray", "3,3")
       .attr("opacity", 0.8);
 
-    // Add X-axis grid lines
     const xGridAxis = d3.axisBottom(x)
       .tickSize(-innerH)
       .tickFormat("");
-      
+
     if (metricKey === "gdp_pc") {
       const [minX, maxX] = x.domain();
       xGridAxis.tickValues(buildLogTicks(minX, maxX));
@@ -108,7 +100,6 @@
       .attr("stroke-dasharray", "3,3")
       .attr("opacity", 0.8);
 
-    // Hide the domain lines for the grid
     g.selectAll(".grid-lines .domain").style("display", "none");
 
     g.append("g")
@@ -158,10 +149,24 @@
       .attr("opacity", 0.7)
       .attr("stroke", "#fff")
       .attr("stroke-width", 1)
+      .style("pointer-events", "all")
+      .on("mouseover", function () {
+        d3.select(this)
+          .attr("r", 7)
+          .attr("stroke-width", 2)
+          .attr("opacity", 0.9);
+      })
+      .on("mouseout", function () {
+        d3.select(this)
+          .attr("r", 5)
+          .attr("stroke-width", 1)
+          .attr("opacity", 0.7);
+      })
       .on("mousemove", (event, d) => {
         const tooltip = d3.select("#tooltip");
         tooltip
           .style("display", "block")
+          .style("opacity", 1)
           .style("left", `${event.pageX + 15}px`)
           .style("top", `${event.pageY + 15}px`)
           .html(`
@@ -171,7 +176,7 @@
           `);
       })
       .on("mouseleave", () => {
-        d3.select("#tooltip").style("display", "none");
+        d3.select("#tooltip").style("display", "none").style("opacity", 0);
       });
 
     const n = plotData.length;

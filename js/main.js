@@ -54,6 +54,9 @@ function init() {
         }
       );
 
+      // Initialize Line Chart
+      LineChartView.drawLineChart(countryData);
+
       // Initialize Map
       const mapMetric = METRICS[DEFAULTS.mapMetric];
       mapMetricSelect.value = mapMetric.key;
