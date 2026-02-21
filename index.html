@@ -3,26 +3,40 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Homicide Rate v.s. GDP</title>
+    <title>Homicide Rate v.s. GDP and Gini</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
     <div class="dashboard">
       <header class="panel header-panel">
         <div class="header-left">
-          <h1>Homicide Rate v.s. GDP</h1>
-          <p>Yu Jou Chang</p>
-          <p>
+          <h1>Homicide Rate v.s. GDP and Gini</h1>
+          <p class="author">Yu Jou Chang</p>
+          <p class="sources">
             Source: Our World in Data -
-            <a href="https://ourworldindata.org/grapher/gdp-per-capita-worldbank">GDP per capita</a>
-            and
-            <a href="https://ourworldindata.org/grapher/homicide-rate-unodc?country=ECU~JAM~COL~RUS">
+            <a href="https://ourworldindata.org/grapher/gdp-per-capita-worldbank" target="_blank" rel="noopener noreferrer">
+              GDP per capita
+            </a>
+            ,
+            <a href="https://ourworldindata.org/grapher/homicide-rate-unodc?country=ECU~JAM~COL~RUS" target="_blank" rel="noopener noreferrer">
               Homicide rate per 100,000 population
+            </a>
+            and
+            <a href="https://ourworldindata.org/grapher/economic-inequality-gini-index" target="_blank" rel="noopener noreferrer">
+              Income inequality: Gini coefficient
             </a>
           </p>
         </div>
         <div class="header-right">
-          <!-- Some Buttons -->
+          <label for="metric-select">Compare with:</label>
+          <select id="metric-select">
+            <option value="gdp_pc">GDP per capita</option>
+            <option value="gini">Gini coefficient</option>
+            <option value="homicide_rate">Homicide rate</option>
+          </select>
         </div>
       </header>
 
@@ -63,6 +77,8 @@
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+    <script src="js/map.js"></script>
+    <script src="js/scatter.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>
