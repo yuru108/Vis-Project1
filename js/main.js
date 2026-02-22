@@ -14,6 +14,9 @@ const DEFAULTS = {
   scatterMetric: "gdp_pc",
 };
 
+let selectedIso3 = null;
+let selectedName = null;
+
 function setDataSources(nextSources) {
   Object.assign(DATA_SOURCES, nextSources);
 }
@@ -39,51 +42,63 @@ function init() {
   loadData()
     .then(([geoData, countryData]) => {
       const averagedData = MapView.calculateCountryAverages(countryData);
-      
+
       const mapMetricSelect = document.getElementById("map-metric-select");
       const scatterMetricSelect = document.getElementById("scatter-metric-select");
 
-      // Initialize Scatter Plot
       const scatterMetric = METRICS[DEFAULTS.scatterMetric];
       scatterMetricSelect.value = scatterMetric.key;
-      ScatterView.drawScatter(
-        averagedData.filter((d) => d[scatterMetric.key] !== null && d.homicide_rate !== null),
-        {
-          metricKey: scatterMetric.key,
-          metricLabel: scatterMetric.label,
-        }
-      );
 
-      // Initialize Line Chart
-      LineChartView.drawLineChart(countryData);
-
-      // Initialize Map
       const mapMetric = METRICS[DEFAULTS.mapMetric];
       mapMetricSelect.value = mapMetric.key;
+
       const mapHandle = MapView.initMap(geoData, averagedData, mapMetric.key, mapMetric.label, {
         mapSelector: "#map",
         tooltipSelector: "#tooltip",
         width: 1100,
         height: 620,
+        onCountrySelect: (iso3, name) => {
+          selectedIso3 = iso3;
+          selectedName = name;
+          renderViews();
+        },
       });
 
-      // Event Listeners
+      function renderViews() {
+        if (selectedIso3) {
+          const countryRows = countryData.filter((d) => d.iso3 === selectedIso3);
+          ScatterView.drawScatter(
+            countryRows.filter((d) => d[scatterMetricSelect.value] !== null && d.homicide_rate !== null),
+            {
+              metricKey: scatterMetricSelect.value,
+              metricLabel: METRICS[scatterMetricSelect.value].label,
+            }
+          );
+          LineChartView.drawLineChart(countryRows, { countryName: selectedName });
+          mapHandle.setSelected(selectedIso3);
+        } else {
+          ScatterView.drawScatter(
+            averagedData.filter((d) => d[scatterMetricSelect.value] !== null && d.homicide_rate !== null),
+            {
+              metricKey: scatterMetricSelect.value,
+              metricLabel: METRICS[scatterMetricSelect.value].label,
+            }
+          );
+          LineChartView.drawLineChart(countryData);
+          mapHandle.setSelected(null);
+        }
+      }
+
+      renderViews();
+
       mapMetricSelect.addEventListener("change", (event) => {
         const selected = METRICS[event.target.value];
         if (!selected) return;
         mapHandle.updateMetric(selected.key, selected.label, averagedData);
       });
 
-      scatterMetricSelect.addEventListener("change", (event) => {
-        const selected = METRICS[event.target.value];
-        if (!selected) return;
-        ScatterView.drawScatter(
-          averagedData.filter((d) => d[selected.key] !== null && d.homicide_rate !== null),
-          {
-            metricKey: selected.key,
-            metricLabel: selected.label,
-          }
-        );
+      scatterMetricSelect.addEventListener("change", () => {
+        renderViews();
       });
     })
     .catch((error) => {
@@ -94,16 +109,6 @@ function init() {
 window.App = {
   init,
   setDataSources,
-  setMapMetric: (metricKey) => {
-    const select = document.getElementById("map-metric-select");
-    if (select) select.value = metricKey;
-    init();
-  },
-  setScatterMetric: (metricKey) => {
-    const select = document.getElementById("scatter-metric-select");
-    if (select) select.value = metricKey;
-    init();
-  },
   reload: init,
 };
 

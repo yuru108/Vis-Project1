@@ -6,6 +6,7 @@
     width: 1100,
     height: 620,
     tooltipPadding: 10,
+    onCountrySelect: null,
   };
 
   class ChoroplethMap {
@@ -14,6 +15,7 @@
       this.geoData = geoData;
       this.svg = d3.select(this.config.mapSelector);
       this.tooltip = d3.select(this.config.tooltipSelector);
+      this.selectedIso3 = null;
 
       this.projection = d3.geoMercator();
       this.geoPath = d3.geoPath().projection(this.projection);
@@ -28,6 +30,20 @@
         .append("g")
         .attr("class", "legend")
         .attr("transform", `translate(20, ${this.config.height - 60})`);
+
+      this.svg.on("click", () => {
+        if (this.config.onCountrySelect) {
+          this.setSelected(null);
+          this.config.onCountrySelect(null, null);
+        }
+      });
+    }
+
+    setSelected(iso3) {
+      this.selectedIso3 = iso3;
+      this.chart
+        .selectAll(".country")
+        .classed("selected", (d) => d.id === this.selectedIso3);
     }
 
     update(metricKey, metricLabel) {
@@ -117,6 +133,7 @@
         .data(countries.features)
         .join("path")
         .attr("class", "country")
+        .classed("selected", (d) => d.id === this.selectedIso3)
         .attr("d", this.geoPath)
         .attr("stroke", "#9ca3af")
         .attr("stroke-width", 0.5)
@@ -140,6 +157,14 @@
             .style("opacity", 1)
             .attr("stroke-width", 0.5)
             .attr("stroke", "#9ca3af");
+        })
+        .on("click", (event, d) => {
+          event.stopPropagation();
+          const nextIso = this.selectedIso3 === d.id ? null : d.id;
+          this.setSelected(nextIso);
+          if (this.config.onCountrySelect) {
+            this.config.onCountrySelect(nextIso, d.properties.name);
+          }
         });
 
       countryPath
@@ -209,6 +234,7 @@
 
     return {
       choroplethMap,
+      setSelected: (iso3) => choroplethMap.setSelected(iso3),
       updateMetric(nextKey, nextLabel, data) {
         attachMetricValues(geoData, data, nextKey);
         choroplethMap.update(nextKey, nextLabel);

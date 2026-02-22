@@ -286,3 +286,7 @@ select.custom-select:focus {
     grid-row: 4;
   }
 }
+.country.selected {
+  stroke: #111827 !important;
+  stroke-width: 2 !important;
+}
