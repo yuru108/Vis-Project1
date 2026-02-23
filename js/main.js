@@ -119,6 +119,11 @@ function drawLineForSelection() {
   }
 }
 
+function getMapDomain(metricKey) {
+  if (!globalDomains) return null;
+  return globalDomains[metricKey] || null;
+}
+
 function setCurrentYear(year) {
   if (year === currentYear) return;
   currentYear = Number.isFinite(year) ? year : null;
@@ -129,7 +134,7 @@ function setCurrentYear(year) {
   const yearData = Number.isFinite(currentYear)
     ? cachedCountryData.filter((d) => d.year === currentYear)
     : cachedAveragedData;
-  const fixedDomain = globalDomains ? globalDomains[selected.key] : null;
+  const fixedDomain = getMapDomain(selected.key);
   mapHandle.updateMetric(selected.key, selected.label, yearData, fixedDomain);
   drawLineForSelection();
 }
@@ -159,7 +164,7 @@ function init() {
         tooltipSelector: "#tooltip",
         width: 1100,
         height: 620,
-        fixedDomain: globalDomains ? globalDomains[mapMetric.key] : null,
+        fixedDomain: getMapDomain(mapMetric.key),
         onCountrySelect: (iso3, name) => {
           selectedIso3 = iso3;
           selectedName = name;
@@ -180,7 +185,7 @@ function init() {
         const yearData = Number.isFinite(currentYear)
           ? cachedCountryData.filter((d) => d.year === currentYear)
           : cachedAveragedData;
-        const fixedDomain = globalDomains ? globalDomains[selected.key] : null;
+        const fixedDomain = getMapDomain(selected.key);
         mapHandle.updateMetric(selected.key, selected.label, yearData, fixedDomain);
       });
 

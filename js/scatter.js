@@ -166,7 +166,12 @@
 
     const hasYear = Number.isFinite(selectedYear);
     const hasHighlight = Boolean(highlightIso3) && !hasYear;
-    const canHover = (d) => !hasYear || d.year === selectedYear;
+    const canHover = (d) => {
+      if (hasYear) return d.year === selectedYear;
+      if (hasHighlight) return d.iso3 === highlightIso3;
+      return true;
+    };
+    const dotColor = COLOR_CONFIG.scatter.dotDefault;
 
     g.append("g")
       .selectAll("circle")
@@ -184,14 +189,14 @@
         return hasHighlight && d.iso3 === highlightIso3 ? 6 : 4;
       })
       .attr("fill", (d) => {
-        if (hasYear) return d.year === selectedYear ? "var(--accent-color)" : "#d1d5db";
-        if (!hasHighlight) return "var(--accent-color)";
-        return d.iso3 === highlightIso3 ? "var(--accent-color)" : "#d1d5db";
+        if (hasYear) return d.year === selectedYear ? dotColor : "#d1d5db";
+        if (!hasHighlight) return dotColor;
+        return d.iso3 === highlightIso3 ? dotColor : "#d1d5db";
       })
       .attr("opacity", (d) => {
-        if (hasYear) return d.year === selectedYear ? 0.85 : 0.25;
-        if (!hasHighlight) return 0.7;
-        return d.iso3 === highlightIso3 ? 0.9 : 0.35;
+        if (hasYear) return d.year === selectedYear ? COLOR_CONFIG.scatter.dotOpacity : 0.25;
+        if (!hasHighlight) return COLOR_CONFIG.scatter.dotOpacity;
+        return d.iso3 === highlightIso3 ? 0.8 : 0.25;
       })
       .attr("stroke", "#fff")
       .attr("stroke-width", (d) => {
@@ -261,10 +266,10 @@
         .attr("y1", y(y1))
         .attr("x2", x(x2e))
         .attr("y2", y(y2))
-        .attr("stroke", "#ef4444")
-        .attr("stroke-width", 3)
-        .attr("stroke-dasharray", "5,3")
-        .attr("opacity", 0.95);
+        .attr("stroke", COLOR_CONFIG.scatter.trendLine.global)
+        .attr("stroke-width", 2)
+        .attr("stroke-dasharray", "6,4")
+        .attr("opacity", 0.9);
     }
 
     if (hasHighlight) {
@@ -283,9 +288,9 @@
           .attr("y1", y(y1))
           .attr("x2", x(x2e))
           .attr("y2", y(y2))
-          .attr("stroke", "#facc15")
-          .attr("stroke-width", 3.5)
-          .attr("stroke-dasharray", "4,3")
+          .attr("stroke", COLOR_CONFIG.scatter.trendLine.selected)
+          .attr("stroke-width", 4)
+          .attr("stroke-dasharray", "0")
           .attr("opacity", 1);
       }
     }
@@ -299,9 +304,9 @@
       .attr("y1", 0)
       .attr("x2", 0)
       .attr("y2", 0)
-      .attr("stroke", "#ef4444")
-      .attr("stroke-width", 3)
-      .attr("stroke-dasharray", "5,3");
+      .attr("stroke", COLOR_CONFIG.scatter.trendLine.global)
+      .attr("stroke-width", 2)
+      .attr("stroke-dasharray", "6,4");
 
     legend.append("text")
       .attr("x", -36)
@@ -318,9 +323,9 @@
       .attr("y1", 24)
       .attr("x2", 0)
       .attr("y2", 24)
-      .attr("stroke", "#facc15")
-      .attr("stroke-width", 3.5)
-      .attr("stroke-dasharray", "4,3")
+      .attr("stroke", COLOR_CONFIG.scatter.trendLine.selected)
+      .attr("stroke-width", 4)
+      .attr("stroke-dasharray", "0")
       .attr("opacity", selectedLegendOpacity);
 
     legend.append("text")

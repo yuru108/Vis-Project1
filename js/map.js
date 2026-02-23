@@ -72,9 +72,17 @@
             : extent
           : [0, 1];
 
+      const scaleMap = {
+        homicide_rate: COLOR_CONFIG.attributes.homicide.scale,
+        gdp_pc: COLOR_CONFIG.attributes.gdp.scale,
+        gini: COLOR_CONFIG.attributes.gini.scale,
+      };
+      const domainMin = Array.isArray(domain) && Number.isFinite(domain[0]) ? domain[0] : 0;
+      const domainMax = Array.isArray(domain) && Number.isFinite(domain[1]) ? domain[1] : 1;
+
       const colorScale = d3
-        .scaleSequential(d3.interpolateBlues)
-        .domain(domain);
+        .scaleSequential(scaleMap[metricKey] || d3.interpolateBlues)
+        .domain([domainMin, domainMax]);
 
       const legendWidth = 300;
       const legendHeight = 10;
@@ -112,7 +120,10 @@
         .attr("rx", 2)
         .attr("ry", 2);
 
-      const legendScale = d3.scaleLinear().domain(domain).range([0, legendWidth]);
+      const legendScale = d3
+        .scaleLinear()
+        .domain([domainMin, domainMax])
+        .range([0, legendWidth]);
       const legendAxis = d3.axisBottom(legendScale)
         .ticks(5)
         .tickSize(5)
@@ -145,14 +156,14 @@
         .attr("class", "country")
         .classed("selected", (d) => d.id === this.selectedIso3)
         .attr("d", this.geoPath)
-        .attr("stroke", "#9ca3af")
+        .attr("stroke", COLOR_CONFIG.map.stroke)
         .attr("stroke-width", 0.5)
         .attr("fill", (d) => {
           const value = d.properties.metric_value;
           if (Number.isFinite(value)) {
             return colorScale(value);
           }
-          return `url(#${this.config.stripeFillId})`;
+          return COLOR_CONFIG.map.defaultFill;
         })
         .style("transition", "fill 0.3s ease, opacity 0.2s ease")
         .style("pointer-events", "all")
@@ -160,13 +171,13 @@
           d3.select(this)
             .style("opacity", 0.8)
             .attr("stroke-width", 1.5)
-            .attr("stroke", "#1f2937");
+            .attr("stroke", COLOR_CONFIG.map.highlightStroke);
         })
         .on("mouseout", function () {
           d3.select(this)
             .style("opacity", 1)
             .attr("stroke-width", 0.5)
-            .attr("stroke", "#9ca3af");
+            .attr("stroke", COLOR_CONFIG.map.stroke);
         })
         .on("click", (event, d) => {
           event.stopPropagation();

@@ -37,9 +37,9 @@ const LineChartView = (function () {
     }).filter(d => d.gdp_pc != null && d.gini != null && d.homicide_rate != null);
 
     const metrics = [
-      { key: "gdp_pc", label: "GDP per capita", color: "#2563eb" },
-      { key: "gini", label: "Gini coefficient", color: "#10b981" },
-      { key: "homicide_rate", label: "Homicide rate", color: "#ef4444" }
+      { key: "homicide_rate", label: "Homicide rate", color: COLOR_CONFIG.attributes.homicide.base },
+      { key: "gdp_pc", label: "GDP per capita", color: COLOR_CONFIG.attributes.gdp.base },
+      { key: "gini", label: "Gini coefficient", color: COLOR_CONFIG.attributes.gini.base }
     ];
 
     const normalizedData = yearlyData.map(d => {
@@ -184,7 +184,7 @@ const LineChartView = (function () {
       .attr("class", "focus-line")
       .attr("y1", 0)
       .attr("y2", innerHeight)
-      .attr("stroke", "#9ca3af")
+      .attr("stroke", "#999999")
       .attr("stroke-width", 1)
       .attr("stroke-dasharray", "4,4")
       .style("opacity", 0);
@@ -193,7 +193,7 @@ const LineChartView = (function () {
       .attr("class", "selected-line")
       .attr("y1", 0)
       .attr("y2", innerHeight)
-      .attr("stroke", "#111827")
+      .attr("stroke", "#333333")
       .attr("stroke-width", 2)
       .attr("stroke-dasharray", "2,6")
       .style("opacity", 0);
@@ -255,7 +255,7 @@ const LineChartView = (function () {
         .attr("cy", d => yScale(d.value))
         .attr("r", 5)
         .attr("fill", d => d.color)
-        .attr("stroke", "#111827")
+        .attr("stroke", "#333333")
         .attr("stroke-width", 1.5);
     };
 
