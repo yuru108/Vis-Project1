@@ -3,18 +3,100 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Homicide Rate v.s. GDP</title>
+    <title>Crime, Economy, and Inequality</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
-    <main class="page">
-      <header class="header">
-        <h1>Homicide Rate v.s. GDP</h1>
-        <p>Yu Jou Chang</p>
+    <div class="dashboard">
+      <header class="panel header-panel">
+        <div class="header-left">
+          <h1>Crime, Economy, and Inequality</h1>
+          <p class="author">Yu Jou Chang</p>
+          <p class="sources">
+            Source: Our World in Data -
+            <a href="https://ourworldindata.org/grapher/gdp-per-capita-worldbank" target="_blank" rel="noopener noreferrer">
+              GDP per capita
+            </a>
+            ,
+            <a href="https://ourworldindata.org/grapher/homicide-rate-unodc?country=ECU~JAM~COL~RUS" target="_blank" rel="noopener noreferrer">
+              Homicide rate per 100,000 population
+            </a>
+            and
+            <a href="https://ourworldindata.org/grapher/economic-inequality-gini-index" target="_blank" rel="noopener noreferrer">
+              Income inequality: Gini coefficient
+            </a>
+          </p>
+        </div>
+        <div class="header-right" style="text-align: right;">
+          <div id="selection-note" class="selection-note"></div>
+        </div>
       </header>
-    </main>
+
+      <section class="panel main-left">
+        <div class="panel-head">
+          <h2>World Map</h2>
+          <div class="map-controls">
+            <label for="map-metric-select">Color by:</label>
+            <select id="map-metric-select" class="custom-select">
+              <option value="homicide_rate">Homicide rate</option>
+              <option value="gdp_pc">GDP per capita</option>
+              <option value="gini">Gini coefficient</option>
+            </select>
+          </div>
+        </div>
+        <div class="viz-wrap">
+          <svg id="map" viewBox="0 0 1100 620" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </section>
+
+      <section class="panel main-right">
+        <div class="panel-head">
+          <h2>Scatter Plot</h2>
+          <div class="map-controls">
+            <label for="scatter-metric-select">X-Axis:</label>
+            <select id="scatter-metric-select" class="custom-select">
+              <option value="gdp_pc">GDP per capita</option>
+              <option value="gini">Gini coefficient</option>
+            </select>
+          </div>
+        </div>
+        <div class="viz-wrap">
+          <svg id="scatter" viewBox="0 0 900 600" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </section>
+
+      <section class="panel bottom-panel">
+        <div class="viz-wrap">
+          <svg id="linechart" viewBox="0 0 1500 200" preserveAspectRatio="xMidYMid meet"></svg>
+        </div>
+      </section>
+    </div>
+
+    <div id="tooltip" class="tooltip"></div>
+
+    <svg width="0" height="0" class="defs-only">
+      <defs>
+        <pattern id="lightstripe" patternUnits="userSpaceOnUse" width="5" height="5">
+          <image
+            xlink:href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0naHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmcnIHdpZHRoPSc1JyBoZWlnaHQ9JzUnPgogIDxyZWN0IHdpZHRoPSc1JyBoZWlnaHQ9JzUnIGZpbGw9J3doaXRlJy8+CiAgPHBhdGggZD0nTTAgNUw1IDBaTTYgNEw0IDZaTS0xIDFMMSAtMVonIHN0cm9rZT0nIzg4OCcgc3Ryb2tlLXdpZHRoPScxJy8+Cjwvc3ZnPg=="
+            x="0"
+            y="0"
+            width="5"
+            height="5"
+          ></image>
+        </pattern>
+      </defs>
+    </svg>
 
     <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/topojson-client@3"></script>
+    <script src="js/colors.js"></script>
+    <script src="js/map.js"></script>
+    <script src="js/scatter.js"></script>
+    <script src="js/linechart.js"></script>
     <script src="js/main.js"></script>
   </body>
 </html>

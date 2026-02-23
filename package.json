@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.1.0",
   "scripts": {
-    "start": "npx serve ."
+    "start": "npx serve .",
+    "preprocess": "python scripts/preprocess.py"
   }
 }
