@@ -9,6 +9,13 @@
     onCountrySelect: null,
   };
 
+  const formatValue = (key, value) => {
+    if (!Number.isFinite(value)) return "No data";
+    if (key === "gdp_pc") return d3.format("$,.0f")(value);
+    if (key === "gini") return d3.format(".1f")(value);
+    return d3.format(".2f")(value);
+  };
+
   class ChoroplethMap {
     constructor(config, geoData) {
       this.config = { ...DEFAULTS, ...config };
@@ -169,9 +176,10 @@
 
       countryPath
         .on("mousemove", (event, d) => {
-          const value = Number.isFinite(d.properties.metric_value)
-            ? d.properties.metric_value.toFixed(2)
-            : "No data available";
+          const metricValue = formatValue(metricKey, d.properties.metric_value);
+          const homicideValue = formatValue("homicide_rate", d.properties.homicide_rate);
+          const gdpValue = formatValue("gdp_pc", d.properties.gdp_pc);
+          const giniValue = formatValue("gini", d.properties.gini);
 
           this.tooltip
             .style("display", "block")
@@ -180,7 +188,10 @@
             .style("top", `${event.pageY + this.config.tooltipPadding}px`)
             .html(`
             <strong>${d.properties.name}</strong>
-            <div>${metricLabel}: ${value}</div>
+            <div>${metricLabel}: ${metricValue}</div>
+            <div>Homicide rate: ${homicideValue}</div>
+            <div>GDP per capita: ${gdpValue}</div>
+            <div>Gini: ${giniValue}</div>
           `);
         })
         .on("mouseleave", () => {
@@ -192,15 +203,26 @@
   function attachMetricValues(geoData, averagedData, metricKey) {
     const valueByIso3 = new Map();
 
-    averagedData
-      .filter((d) => Number.isFinite(d[metricKey]))
-      .forEach((d) => {
+    averagedData.forEach((d) => {
+      if (Number.isFinite(d[metricKey])) {
         valueByIso3.set(d.iso3, d[metricKey]);
-      });
+      }
+    });
 
     geoData.objects.world.geometries.forEach((d) => {
       const value = valueByIso3.get(d.id);
       d.properties.metric_value = Number.isFinite(value) ? value : null;
+    });
+
+    const extraByIso = new Map(
+      averagedData.map((d) => [d.iso3, d])
+    );
+
+    geoData.objects.world.geometries.forEach((d) => {
+      const extra = extraByIso.get(d.id);
+      d.properties.homicide_rate = extra ? extra.homicide_rate : null;
+      d.properties.gdp_pc = extra ? extra.gdp_pc : null;
+      d.properties.gini = extra ? extra.gini : null;
     });
   }
 

@@ -290,3 +290,8 @@ select.custom-select:focus {
   stroke: #111827 !important;
   stroke-width: 2 !important;
 }
+.selection-note {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
