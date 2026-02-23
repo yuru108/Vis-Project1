@@ -23,6 +23,7 @@
       this.svg = d3.select(this.config.mapSelector);
       this.tooltip = d3.select(this.config.tooltipSelector);
       this.selectedIso3 = null;
+      this.fixedDomain = this.config.fixedDomain || null;
 
       this.projection = d3.geoMercator();
       this.geoPath = d3.geoPath().projection(this.projection);
@@ -53,7 +54,7 @@
         .classed("selected", (d) => d.id === this.selectedIso3);
     }
 
-    update(metricKey, metricLabel) {
+    update(metricKey, metricLabel, fixedDomain = null) {
       const countries = topojson.feature(this.geoData, this.geoData.objects.world);
       countries.features = countries.features.filter((d) => d.properties.name !== "Antarctica");
 
@@ -62,8 +63,10 @@
         .filter((d) => Number.isFinite(d));
 
       const extent = d3.extent(values);
-      const domain =
-        Number.isFinite(extent[0]) && Number.isFinite(extent[1])
+      const stableDomain = fixedDomain || this.fixedDomain;
+      const domain = Array.isArray(stableDomain) && Number.isFinite(stableDomain[0]) && Number.isFinite(stableDomain[1])
+        ? stableDomain
+        : Number.isFinite(extent[0]) && Number.isFinite(extent[1])
           ? extent[0] === extent[1]
             ? [extent[0], extent[0] + 1]
             : extent
@@ -252,14 +255,14 @@
     attachMetricValues(geoData, averagedData, metricKey);
 
     const choroplethMap = new ChoroplethMap(config, geoData);
-    choroplethMap.update(metricKey, metricLabel);
+    choroplethMap.update(metricKey, metricLabel, config.fixedDomain || null);
 
     return {
       choroplethMap,
       setSelected: (iso3) => choroplethMap.setSelected(iso3),
-      updateMetric(nextKey, nextLabel, data) {
+      updateMetric(nextKey, nextLabel, data, fixedDomain = null) {
         attachMetricValues(geoData, data, nextKey);
-        choroplethMap.update(nextKey, nextLabel);
+        choroplethMap.update(nextKey, nextLabel, fixedDomain);
       },
     };
   }

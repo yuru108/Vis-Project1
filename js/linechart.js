@@ -5,6 +5,8 @@ const LineChartView = (function () {
       width = 1500,
       height = 200,
       margin = { top: 15, right: 180, bottom: 40, left: 70 },
+      selectedYear = null,
+      onYearSelect = null,
     } = options;
 
     const svg = d3.select(selector);
@@ -187,12 +189,77 @@ const LineChartView = (function () {
       .attr("stroke-dasharray", "4,4")
       .style("opacity", 0);
 
+    const selectedLine = g.append("line")
+      .attr("class", "selected-line")
+      .attr("y1", 0)
+      .attr("y2", innerHeight)
+      .attr("stroke", "#111827")
+      .attr("stroke-width", 2)
+      .attr("stroke-dasharray", "2,6")
+      .style("opacity", 0);
+
+    const selectedDots = g.append("g")
+      .attr("class", "selected-dots")
+      .style("opacity", 0);
+
     const overlay = g.append("rect")
       .attr("class", "overlay")
       .attr("width", innerWidth)
       .attr("height", innerHeight)
       .style("fill", "none")
       .style("pointer-events", "all");
+
+    const bisect = d3.bisector(d => d.year).left;
+
+    const getNearestYear = (xPos) => {
+      const x0 = xScale.invert(xPos);
+      const i = bisect(normalizedData, x0, 1);
+      const d0 = normalizedData[i - 1];
+      const d1 = normalizedData[i];
+      if (d1 && d0) {
+        return x0 - d0.year > d1.year - x0 ? d1.year : d0.year;
+      }
+      if (d1) return d1.year;
+      return d0 ? d0.year : null;
+    };
+
+    const renderSelected = (year) => {
+      if (!Number.isFinite(year)) {
+        selectedLine.style("opacity", 0);
+        selectedDots.style("opacity", 0);
+        selectedDots.selectAll("*").remove();
+        return;
+      }
+
+      const sel = normalizedData.find(d => d.year === year);
+      if (!sel) return;
+
+      const xPos = xScale(sel.year);
+      selectedLine
+        .attr("x1", xPos)
+        .attr("x2", xPos)
+        .style("opacity", 1);
+
+      const dots = metrics.map(m => ({
+        key: m.key,
+        color: m.color,
+        value: sel[m.key],
+      }));
+
+      selectedDots
+        .style("opacity", 1)
+        .selectAll("circle")
+        .data(dots, d => d.key)
+        .join("circle")
+        .attr("cx", xPos)
+        .attr("cy", d => yScale(d.value))
+        .attr("r", 5)
+        .attr("fill", d => d.color)
+        .attr("stroke", "#111827")
+        .attr("stroke-width", 1.5);
+    };
+
+    renderSelected(selectedYear);
 
     overlay
       .on("mouseover", () => {
@@ -205,8 +272,6 @@ const LineChartView = (function () {
       })
       .on("mousemove", (event) => {
         const x0 = xScale.invert(d3.pointer(event)[0]);
-
-        const bisect = d3.bisector(d => d.year).left;
         const i = bisect(normalizedData, x0, 1);
         const d0 = normalizedData[i - 1];
         const d1 = normalizedData[i];
@@ -239,6 +304,55 @@ const LineChartView = (function () {
         `)
         .style("left", (event.pageX + 15) + "px")
         .style("top", (event.pageY - 28) + "px");
+      });
+
+    let isPointerDown = false;
+    let didMove = false;
+    let lastSelectedYear = selectedYear;
+
+    const applyYear = (year) => {
+      if (!Number.isFinite(year)) return;
+      if (year === lastSelectedYear) return;
+      lastSelectedYear = year;
+      renderSelected(year);
+      if (onYearSelect) onYearSelect(year);
+    };
+
+    overlay
+      .style("cursor", "pointer")
+      .on("pointerdown", (event) => {
+        isPointerDown = true;
+        didMove = false;
+        overlay.node().setPointerCapture(event.pointerId);
+      })
+      .on("pointermove", (event) => {
+        if (!isPointerDown) return;
+        didMove = true;
+        const [xPos] = d3.pointer(event, overlay.node());
+        const year = getNearestYear(xPos);
+        if (Number.isFinite(year)) applyYear(year);
+      })
+      .on("pointerup", (event) => {
+        if (!isPointerDown) return;
+        isPointerDown = false;
+        overlay.node().releasePointerCapture(event.pointerId);
+        const [xPos] = d3.pointer(event, overlay.node());
+        const year = getNearestYear(xPos);
+        if (!Number.isFinite(year)) return;
+
+        if (!didMove) {
+          if (year === lastSelectedYear) {
+            lastSelectedYear = null;
+            renderSelected(null);
+            if (onYearSelect) onYearSelect(null);
+          } else {
+            applyYear(year);
+          }
+        }
+      })
+      .on("pointerleave", () => {
+        isPointerDown = false;
+        didMove = false;
       });
   }
 

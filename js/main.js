@@ -20,6 +20,8 @@ let cachedCountryData = null;
 let cachedAveragedData = null;
 let mapHandle = null;
 let globalDomains = null;
+let currentYear = null;
+let yearList = [];
 
 function setDataSources(nextSources) {
   Object.assign(DATA_SOURCES, nextSources);
@@ -61,16 +63,18 @@ function computeGlobalDomains(rows) {
 function updateSelectionNote() {
   const note = document.getElementById("selection-note");
   if (!note) return;
+
+  const yearLabel = Number.isFinite(currentYear) ? currentYear : "Average";
   
   if (selectedIso3 && selectedName) {
     note.innerHTML = `
       <h2 style="margin: 0; font-size: 24px; color: var(--accent-color);">${selectedName}</h2>
-      <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--text-secondary);">Viewing country specific data</p>
+      <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--text-secondary);">Year: ${yearLabel}</p>
     `;
   } else {
     note.innerHTML = `
       <h2 style="margin: 0; font-size: 24px; color: var(--accent-color);">Global Average</h2>
-      <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--text-secondary);">Click a country on the map to view its data</p>
+      <p style="margin: 4px 0 0 0; font-size: 14px; color: var(--text-secondary);">Year: ${yearLabel}</p>
     `;
   }
 }
@@ -83,14 +87,16 @@ function drawScatterForSelection(metricKey) {
   const yDomain = globalDomains ? globalDomains.homicide_rate : null;
 
   if (cachedCountryData) {
+    const yearData = cachedCountryData;
     ScatterView.drawScatter(
-      cachedCountryData.filter((d) => d[metric.key] !== null && d.homicide_rate !== null),
+      yearData.filter((d) => d[metric.key] !== null && d.homicide_rate !== null),
       {
         metricKey: metric.key,
         metricLabel: metric.label,
         xDomain,
         yDomain,
         highlightIso3: selectedIso3,
+        selectedYear: Number.isFinite(currentYear) ? currentYear : null,
       }
     );
   }
@@ -100,10 +106,32 @@ function drawLineForSelection() {
   if (!cachedCountryData) return;
   if (selectedIso3) {
     const countryRows = cachedCountryData.filter((d) => d.iso3 === selectedIso3);
-    LineChartView.drawLineChart(countryRows, { countryName: selectedName });
+    LineChartView.drawLineChart(countryRows, {
+      countryName: selectedName,
+      selectedYear: currentYear,
+      onYearSelect: setCurrentYear,
+    });
   } else {
-    LineChartView.drawLineChart(cachedCountryData);
+    LineChartView.drawLineChart(cachedCountryData, {
+      selectedYear: currentYear,
+      onYearSelect: setCurrentYear,
+    });
   }
+}
+
+function setCurrentYear(year) {
+  if (year === currentYear) return;
+  currentYear = Number.isFinite(year) ? year : null;
+  updateSelectionNote();
+  drawScatterForSelection(document.getElementById("scatter-metric-select").value);
+  const mapMetricSelect = document.getElementById("map-metric-select");
+  const selected = METRICS[mapMetricSelect.value];
+  const yearData = Number.isFinite(currentYear)
+    ? cachedCountryData.filter((d) => d.year === currentYear)
+    : cachedAveragedData;
+  const fixedDomain = globalDomains ? globalDomains[selected.key] : null;
+  mapHandle.updateMetric(selected.key, selected.label, yearData, fixedDomain);
+  drawLineForSelection();
 }
 
 function init() {
@@ -112,6 +140,8 @@ function init() {
       cachedCountryData = countryData;
       cachedAveragedData = MapView.calculateCountryAverages(countryData);
       globalDomains = computeGlobalDomains(countryData);
+      yearList = Array.from(new Set(countryData.map((d) => d.year))).sort(d3.ascending);
+      currentYear = null;
 
       const mapMetricSelect = document.getElementById("map-metric-select");
       const scatterMetricSelect = document.getElementById("scatter-metric-select");
@@ -122,11 +152,14 @@ function init() {
       const mapMetric = METRICS[DEFAULTS.mapMetric];
       mapMetricSelect.value = mapMetric.key;
 
-      mapHandle = MapView.initMap(geoData, cachedAveragedData, mapMetric.key, mapMetric.label, {
+      const initialYearData = cachedAveragedData;
+
+      mapHandle = MapView.initMap(geoData, initialYearData, mapMetric.key, mapMetric.label, {
         mapSelector: "#map",
         tooltipSelector: "#tooltip",
         width: 1100,
         height: 620,
+        fixedDomain: globalDomains ? globalDomains[mapMetric.key] : null,
         onCountrySelect: (iso3, name) => {
           selectedIso3 = iso3;
           selectedName = name;
@@ -144,7 +177,11 @@ function init() {
       mapMetricSelect.addEventListener("change", (event) => {
         const selected = METRICS[event.target.value];
         if (!selected) return;
-        mapHandle.updateMetric(selected.key, selected.label, cachedAveragedData);
+        const yearData = Number.isFinite(currentYear)
+          ? cachedCountryData.filter((d) => d.year === currentYear)
+          : cachedAveragedData;
+        const fixedDomain = globalDomains ? globalDomains[selected.key] : null;
+        mapHandle.updateMetric(selected.key, selected.label, yearData, fixedDomain);
       });
 
       scatterMetricSelect.addEventListener("change", () => {

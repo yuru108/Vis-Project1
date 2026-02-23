@@ -50,6 +50,7 @@
     const metricKey = config.metricKey || "gdp_pc";
     const metricLabel = config.metricLabel || "GDP";
     const highlightIso3 = config.highlightIso3 || null;
+    const selectedYear = Number.isFinite(config.selectedYear) ? config.selectedYear : null;
 
     const filtered = data.filter((d) => Number.isFinite(d[metricKey]) && Number.isFinite(d.homicide_rate));
     const plotData = metricKey === "gdp_pc" ? filtered.filter((d) => d.gdp_pc > 0) : filtered;
@@ -163,7 +164,9 @@
       .style("fill", "var(--text-primary)")
       .text("Homicide rate per 100,000");
 
-    const hasHighlight = Boolean(highlightIso3);
+    const hasYear = Number.isFinite(selectedYear);
+    const hasHighlight = Boolean(highlightIso3) && !hasYear;
+    const canHover = (d) => !hasYear || d.year === selectedYear;
 
     g.append("g")
       .selectAll("circle")
@@ -172,35 +175,52 @@
       .append("circle")
       .attr("cx", (d) => x(d[metricKey]))
       .attr("cy", (d) => y(d.homicide_rate))
-      .attr("r", (d) => (hasHighlight && d.iso3 === highlightIso3 ? 6 : 4))
+      .attr("r", (d) => {
+        if (hasYear) {
+          const isSelectedYear = d.year === selectedYear;
+          const isSelectedCountry = highlightIso3 && d.iso3 === highlightIso3;
+          return isSelectedYear ? (isSelectedCountry ? 6 : 4) : 3;
+        }
+        return hasHighlight && d.iso3 === highlightIso3 ? 6 : 4;
+      })
       .attr("fill", (d) => {
+        if (hasYear) return d.year === selectedYear ? "var(--accent-color)" : "#d1d5db";
         if (!hasHighlight) return "var(--accent-color)";
         return d.iso3 === highlightIso3 ? "var(--accent-color)" : "#d1d5db";
       })
       .attr("opacity", (d) => {
+        if (hasYear) return d.year === selectedYear ? 0.85 : 0.25;
         if (!hasHighlight) return 0.7;
         return d.iso3 === highlightIso3 ? 0.9 : 0.35;
       })
       .attr("stroke", "#fff")
-      .attr("stroke-width", (d) => (hasHighlight && d.iso3 === highlightIso3 ? 2 : 1))
-      .style("pointer-events", (d) => (hasHighlight && d.iso3 !== highlightIso3 ? "none" : "all"))
+      .attr("stroke-width", (d) => {
+        if (hasYear) {
+          const isSelectedCountry = highlightIso3 && d.iso3 === highlightIso3;
+          return isSelectedCountry && d.year === selectedYear ? 2 : 1;
+        }
+        return hasHighlight && d.iso3 === highlightIso3 ? 2 : 1;
+      })
+      .style("pointer-events", (d) => (canHover(d) ? "all" : "none"))
       .on("mouseover", function (event, d) {
-        if (hasHighlight && d.iso3 !== highlightIso3) return;
+        if (!canHover(d)) return;
         d3.select(this)
           .attr("r", 7)
           .attr("stroke-width", 2)
           .attr("opacity", 0.9);
       })
       .on("mouseout", function (event, d) {
-        if (hasHighlight && d.iso3 !== highlightIso3) return;
+        if (!canHover(d)) return;
         const isHighlight = hasHighlight && d.iso3 === highlightIso3;
+        const isSelectedYear = hasYear && d.year === selectedYear;
+        const isSelectedCountry = highlightIso3 && d.iso3 === highlightIso3;
         d3.select(this)
-          .attr("r", isHighlight ? 6 : 4)
-          .attr("stroke-width", isHighlight ? 2 : 1)
-          .attr("opacity", hasHighlight ? (isHighlight ? 0.9 : 0.35) : 0.7);
+          .attr("r", hasYear ? (isSelectedYear ? (isSelectedCountry ? 6 : 4) : 3) : (isHighlight ? 6 : 4))
+          .attr("stroke-width", hasYear ? (isSelectedCountry && isSelectedYear ? 2 : 1) : (isHighlight ? 2 : 1))
+          .attr("opacity", hasYear ? (isSelectedYear ? 0.85 : 0.25) : (hasHighlight ? (isHighlight ? 0.9 : 0.35) : 0.7));
       })
       .on("mousemove", (event, d) => {
-        if (hasHighlight && d.iso3 !== highlightIso3) return;
+        if (!canHover(d)) return;
         const tooltip = d3.select("#tooltip");
         const yearText = Number.isFinite(d.year) ? `Year: ${d.year}` : "Year: N/A";
         tooltip
@@ -216,7 +236,7 @@
           `);
       })
       .on("mouseleave", (event, d) => {
-        if (hasHighlight && d.iso3 !== highlightIso3) return;
+        if (!canHover(d)) return;
         d3.select("#tooltip").style("display", "none").style("opacity", 0);
       });
 
