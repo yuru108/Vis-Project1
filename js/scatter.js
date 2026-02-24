@@ -11,16 +11,6 @@
     };
   }
 
-  function buildLogTicks(min, max) {
-    const minPow = Math.floor(Math.log10(min));
-    const maxPow = Math.ceil(Math.log10(max));
-    const ticks = [];
-    for (let p = minPow; p <= maxPow; p += 1) {
-      ticks.push(10 ** p);
-    }
-    return ticks.filter((t) => t >= min && t <= max);
-  }
-
   function computeTrendline(data, metricKey) {
     const n = data.length;
     if (n <= 1) return null;
@@ -71,11 +61,11 @@
       xDomain = [minVal * 0.9, maxVal * 1.1];
     }
 
-    const x = (metricKey === "gdp_pc" ? d3.scaleLog() : d3.scaleLinear())
+    const x = d3.scaleLinear()
       .domain(xDomain)
       .range([0, innerW]);
 
-    if (metricKey !== "gdp_pc" && !config.xDomain) {
+    if (!config.xDomain) {
       x.nice();
     }
 
@@ -88,14 +78,9 @@
       y.nice();
     }
 
-    const xAxis = d3.axisBottom(x).tickFormat(d3.format("~s"));
-    if (metricKey === "gdp_pc") {
-      const [minX, maxX] = x.domain();
-      const ticks = buildLogTicks(minX, maxX);
-      xAxis.tickValues(ticks);
-    } else {
-      xAxis.ticks(5);
-    }
+    const xAxis = d3.axisBottom(x)
+      .tickFormat(d3.format("~s"))
+      .ticks(5);
 
     g.append("g")
       .attr("class", "grid-lines")
@@ -110,14 +95,8 @@
 
     const xGridAxis = d3.axisBottom(x)
       .tickSize(-innerH)
-      .tickFormat("");
-
-    if (metricKey === "gdp_pc") {
-      const [minX, maxX] = x.domain();
-      xGridAxis.tickValues(buildLogTicks(minX, maxX));
-    } else {
-      xGridAxis.ticks(5);
-    }
+      .tickFormat("")
+      .ticks(5);
 
     g.append("g")
       .attr("class", "grid-lines")
