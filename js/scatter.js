@@ -50,7 +50,8 @@
     const metricKey = config.metricKey || "gdp_pc";
     const metricLabel = config.metricLabel || "GDP";
     const highlightIso3 = config.highlightIso3 || null;
-    const selectedYear = Number.isFinite(config.selectedYear) ? config.selectedYear : null;
+    const filterIso3 = config.filterIso3 || null;
+    const filterYear = Number.isFinite(config.filterYear) ? config.filterYear : null;
 
     const filtered = data.filter((d) => Number.isFinite(d[metricKey]) && Number.isFinite(d.homicide_rate));
     const plotData = metricKey === "gdp_pc" ? filtered.filter((d) => d.gdp_pc > 0) : filtered;
@@ -164,13 +165,16 @@
       .style("fill", "var(--text-primary)")
       .text("Homicide rate per 100,000");
 
-    const hasYear = Number.isFinite(selectedYear);
-    const hasHighlight = Boolean(highlightIso3) && !hasYear;
-    const canHover = (d) => {
-      if (hasYear) return d.year === selectedYear;
-      if (hasHighlight) return d.iso3 === highlightIso3;
+    const hasFilter = Boolean(filterIso3) || Number.isFinite(filterYear);
+    const hasSelectedCountry = Boolean(highlightIso3);
+    const showSelectedTrend = hasSelectedCountry && !Number.isFinite(filterYear);
+    const hasHighlight = hasSelectedCountry && !hasFilter;
+    const isActive = (d) => {
+      if (filterIso3 && d.iso3 !== filterIso3) return false;
+      if (Number.isFinite(filterYear) && d.year !== filterYear) return false;
       return true;
     };
+    const canHover = (d) => !hasFilter || isActive(d);
     const dotColor = COLOR_CONFIG.scatter.dotDefault;
 
     g.append("g")
@@ -181,29 +185,24 @@
       .attr("cx", (d) => x(d[metricKey]))
       .attr("cy", (d) => y(d.homicide_rate))
       .attr("r", (d) => {
-        if (hasYear) {
-          const isSelectedYear = d.year === selectedYear;
-          const isSelectedCountry = highlightIso3 && d.iso3 === highlightIso3;
-          return isSelectedYear ? (isSelectedCountry ? 6 : 4) : 3;
+        if (hasFilter) {
+          return isActive(d) ? 4 : 3;
         }
         return hasHighlight && d.iso3 === highlightIso3 ? 6 : 4;
       })
       .attr("fill", (d) => {
-        if (hasYear) return d.year === selectedYear ? dotColor : "#d1d5db";
+        if (hasFilter) return isActive(d) ? dotColor : "#d1d5db";
         if (!hasHighlight) return dotColor;
         return d.iso3 === highlightIso3 ? dotColor : "#d1d5db";
       })
       .attr("opacity", (d) => {
-        if (hasYear) return d.year === selectedYear ? COLOR_CONFIG.scatter.dotOpacity : 0.25;
+        if (hasFilter) return isActive(d) ? COLOR_CONFIG.scatter.dotOpacity : 0.25;
         if (!hasHighlight) return COLOR_CONFIG.scatter.dotOpacity;
         return d.iso3 === highlightIso3 ? 0.8 : 0.25;
       })
       .attr("stroke", "#fff")
       .attr("stroke-width", (d) => {
-        if (hasYear) {
-          const isSelectedCountry = highlightIso3 && d.iso3 === highlightIso3;
-          return isSelectedCountry && d.year === selectedYear ? 2 : 1;
-        }
+        if (hasFilter) return isActive(d) ? 1 : 0.5;
         return hasHighlight && d.iso3 === highlightIso3 ? 2 : 1;
       })
       .style("pointer-events", (d) => (canHover(d) ? "all" : "none"))
@@ -217,12 +216,11 @@
       .on("mouseout", function (event, d) {
         if (!canHover(d)) return;
         const isHighlight = hasHighlight && d.iso3 === highlightIso3;
-        const isSelectedYear = hasYear && d.year === selectedYear;
-        const isSelectedCountry = highlightIso3 && d.iso3 === highlightIso3;
+        const isActivePoint = hasFilter && isActive(d);
         d3.select(this)
-          .attr("r", hasYear ? (isSelectedYear ? (isSelectedCountry ? 6 : 4) : 3) : (isHighlight ? 6 : 4))
-          .attr("stroke-width", hasYear ? (isSelectedCountry && isSelectedYear ? 2 : 1) : (isHighlight ? 2 : 1))
-          .attr("opacity", hasYear ? (isSelectedYear ? 0.85 : 0.25) : (hasHighlight ? (isHighlight ? 0.9 : 0.35) : 0.7));
+          .attr("r", hasFilter ? (isActivePoint ? 4 : 3) : (isHighlight ? 6 : 4))
+          .attr("stroke-width", hasFilter ? (isActivePoint ? 1 : 0.5) : (isHighlight ? 2 : 1))
+          .attr("opacity", hasFilter ? (isActivePoint ? COLOR_CONFIG.scatter.dotOpacity : 0.25) : (hasHighlight ? (isHighlight ? 0.9 : 0.35) : 0.7));
       })
       .on("mousemove", (event, d) => {
         if (!canHover(d)) return;
@@ -245,7 +243,7 @@
         d3.select("#tooltip").style("display", "none").style("opacity", 0);
       });
 
-    if (hasHighlight) {
+    if (hasSelectedCountry) {
       g.selectAll("circle")
         .filter((d) => d.iso3 === highlightIso3)
         .raise();
@@ -272,7 +270,7 @@
         .attr("opacity", 0.9);
     }
 
-    if (hasHighlight) {
+    if (showSelectedTrend) {
       const highlightData = plotData.filter((d) => d.iso3 === highlightIso3);
       const highlightTrend = computeTrendline(highlightData, metricKey);
       if (highlightTrend) {
@@ -316,7 +314,7 @@
       .style("fill", "var(--text-secondary)")
       .text("Overall trend");
 
-    const selectedLegendOpacity = hasHighlight ? 1 : 0;
+    const selectedLegendOpacity = showSelectedTrend ? 1 : 0;
 
     legend.append("line")
       .attr("x1", -28)

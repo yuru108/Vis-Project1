@@ -87,16 +87,16 @@ function drawScatterForSelection(metricKey) {
   const yDomain = globalDomains ? globalDomains.homicide_rate : null;
 
   if (cachedCountryData) {
-    const yearData = cachedCountryData;
     ScatterView.drawScatter(
-      yearData.filter((d) => d[metric.key] !== null && d.homicide_rate !== null),
+      cachedCountryData.filter((d) => d[metric.key] !== null && d.homicide_rate !== null),
       {
         metricKey: metric.key,
         metricLabel: metric.label,
         xDomain,
         yDomain,
         highlightIso3: selectedIso3,
-        selectedYear: Number.isFinite(currentYear) ? currentYear : null,
+        filterIso3: selectedIso3,
+        filterYear: Number.isFinite(currentYear) ? currentYear : null,
       }
     );
   }
@@ -125,8 +125,16 @@ function getMapDomain(metricKey) {
 }
 
 function setCurrentYear(year) {
-  if (year === currentYear) return;
-  currentYear = Number.isFinite(year) ? year : null;
+  let nextYear = null;
+  if (year === null || typeof year === "undefined") {
+    nextYear = null;
+  } else if (Number.isFinite(year)) {
+    nextYear = year;
+  } else if (Number.isFinite(+year)) {
+    nextYear = +year;
+  }
+  if (nextYear === currentYear) return;
+  currentYear = nextYear;
   updateSelectionNote();
   drawScatterForSelection(document.getElementById("scatter-metric-select").value);
   const mapMetricSelect = document.getElementById("map-metric-select");
